@@ -19,11 +19,14 @@ sub runTest($$) {
         ($isGood == 1 && $isErr == 0)) {
         if ($expectedErr == $isErr) {
             print "pass!\n";
+			return 1;
         } else {
             print "----FAIL----\n";
+			return 0;
         }
     } else {
         print "----UNKNOWN (Consider Failure)----\n";
+		return 0;
     }
 }
 
@@ -31,15 +34,20 @@ sub runTest($$) {
 sub runTests($) {
     my $dirName = shift();
     my $fd;
+	my $count = 0;
     opendir($fd, $dirName) or die "Could not open tests directory: '$dirName'";
     while (my $file = readdir($fd)) {
         if ($file =~/^(good|bad).*\.fun$/) {
-            runTest($dirName, $file);
+            $count += runTest($dirName, $file);
         }
     }
     closedir($fd);
+	return $count;
 }
 
-runTests("basic_tests");
-runTests("big_tests");
-
+$x=0;
+$x += runTests("basic_tests");
+$x += runTests("big_tests");
+$x += runTests("some-tests");
+$x += runTests("more-tests-assign4");
+print "You passed $x/77 tests!\n"

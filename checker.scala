@@ -108,35 +108,77 @@ object Checker {
   // Feel free to copy and paste code from your last submission into here.
   def getType( e:Exp, env:TypeEnv ): Type =
     e match {
-      case x:Var => ??? // FILL ME IN
+      case x:Var => (env.get(x)).getOrElse(throw Illtyped) // FILL ME IN
 
-      case _:Num => ??? // FILL ME IN
+      case _:Num => NumT // FILL ME IN
 
-      case _:Bool => ??? // FILL ME IN
+      case _:Bool => BoolT // FILL ME IN
 
-      case _:Unit => ??? // FILL ME IN
+      case _:Unit => UnitT // FILL ME IN
 
-      case Plus | Minus | Times | Divide => ??? // FILL ME IN
+      case Plus | Minus | Times | Divide => FunT(List(NumT, NumT), NumT) // FILL ME IN
 
-      case LT | EQ => ??? // FILL ME IN
+      case LT | EQ => FunT(List(NumT, NumT), BoolT) // FILL ME IN
 
-      case And | Or => ??? // FILL ME IN
+      case And | Or => FunT(List(BoolT, BoolT), BoolT) // FILL ME IN
 
-      case Not => ??? // FILL ME IN
+      case Not => FunT(List(BoolT), BoolT) // FILL ME IN
 
-      case Fun(params, body) => ??? // FILL ME IN
+      case Fun(params, body) => getType(body, env ++ params.map(i => i._1 -> i._2).toMap) // FILL ME IN
 
-      case Call(fun, args) => ??? // FILL ME IN
+      case Call(fun, args) => {
+        val x = getType(fun, env)
+        x match {
+          case y: FunT => {
+            if (y.params.length == args.length) {
+              for (i <- 0 to y.params.length) {
+                if (y.params.apply(i) != getType(args.apply(i), env)) {
+                  throw Illtyped
+                }
+              }
+              y.ret
+            } else {
+              throw Illtyped
+            }
+          }
+          case _ => throw Illtyped
+        }
+      } // FILL ME IN
 
-      case If(e1, e2, e3) => ??? // FILL ME IN
+      case If(e1, e2, e3) => {
+        if (getType(e1, env) == BoolT) {
+          if (getType(e2, env) == getType(e3, env)) {
+            getType(e2, env)
+          } else {
+            throw Illtyped
+          }
+        } else {
+          throw Illtyped
+        }
+      } // FILL ME IN
 
-      case Let(x, e1, e2) => ??? // FILL ME IN
+      case Let(x, e1, e2) => getType(e2, env + (x -> getType(e1, env))) // FILL ME IN
 
-      case Rec(x, t1, e1, e2) => ??? // FILL ME IN
+      case Rec(x, t1, e1, e2) => {
+        if (getType(e1, env + (x -> t1)) == t1) {
+          getType(e2, env + (x -> getType(e2, env + (x -> t1))))
+        } else {
+          throw Illtyped
+        }
+      } // FILL ME IN
 
-      case Record(fields) => ??? // FILL ME IN
+      case Record(fields) => RcdT(fields.map { case (k, v) => (k, getType(v, env)) }) // FILL ME IN
 
-      case Access(e, field) => ??? // FILL ME IN
+      case Access(e, field) => {
+        e match {
+          case Record(fields) => {
+            if (fields.contains(field)) {
+              getType(fields.getOrElse(field, throw Illtyped), env)
+            } else { throw Illtyped }
+          }
+          case _ => throw Illtyped
+        }
+      } // FILL ME IN
 
       case c @ Construct(constructor, typs, e) => ??? // FILL ME IN
 
